@@ -5,8 +5,8 @@ import requests, re
 import threading
 from collections import Counter
 # Vyatta Configuration
-vyatta_ip = '172.17.8.1'
-auth=('vyatta', 'bcjtqZMhrT2e')
+vyatta_ip = 'localhost'
+auth=('vyatta', 'vyatta')
 headers = {'Accept': 'application/json' , 'Vyatta-Specification-Version': '0.1' }
 spam_drop = "https://www.spamhaus.org/drop/drop.txt"
 delimiter = "##############################"
