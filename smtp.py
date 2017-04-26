@@ -8,13 +8,13 @@ def prompt(prompt):
     data = raw_input(prompt).strip()
     return data
 
-fromaddr = 'sysadmin@supercloud.vn'
-toaddrs = ['openemm1000@gmail.com']
+fromaddr = 'sysadmin@abc.us'
+toaddrs = ['huyvu@gmail.com']
 password = '123456'
 msg = MIMEMultipart()
-msg['From']= "sysadmin@supercloud.vn"
+msg['From']= "sysadminabc.us"
 msg['To'] = ", ".join(toaddrs)
-msg['Subject'] = "Server: mail.longvan.net top 10 sender email"
+msg['Subject'] = "Email from Python"
 print "Enter message, end with ^D (Unix) or ^Z (Windows):"
 
 def system_call(command):
@@ -24,21 +24,10 @@ def system_call(command):
 # Add the From: and To: headers at the start!
 #msg = ("From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n"
 #       % (fromaddr, ", ".join(toaddrs), subject))
-#stat_cmd = '''cat /var/opt/axigen/log/everything.txt|grep "connection accepted"|awk '{print $11}'|cut -d "[" -f2 | cut -d "]" -f1|cut -f1 -d:|sort|uniq -c|sort -n|tail -30'''
-stat_cmd = '''cat /var/opt/axigen/log/sending.txt|grep "MAIL FROM"|awk '{print $9}'|awk -F '[<>]' '{print $2}'|sort|uniq -c|sort -n|tail -10'''
+stat_cmd = '''cat /var/opt/email/sending.txt|grep "MAIL FROM"|awk '{print $9}'|awk -F '[<>]' '{print $2}'|sort|uniq -c|sort -n|tail -10'''
 body = system_call(stat_cmd)
 
 msg.attach(MIMEText(body, 'plain'))
-#print "Message length is " + repr(len(msg))
-#filename = "hoho.txt"
-#attachment = open("hoho.txt", "rb")
- 
-#part = MIMEBase('application', 'octet-stream')
-#part.set_payload((attachment).read())
-#encoders.encode_base64(part)
-#part.add_header('Content-Disposition', "attachment; filename= %s" % filename)
- 
-#msg.attach(part)
  
 server = smtplib.SMTP('localhost')
 server.login(fromaddr,password)
