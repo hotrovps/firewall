@@ -1,3 +1,4 @@
+from functools import partial
 import json , urllib2, time, warnings
 #import urllib.request
 #python3
@@ -124,8 +125,8 @@ def ip(s):
     ip = [(hex2dec(s[6:8])),(hex2dec(s[4:6])),(hex2dec(s[2:4])),(hex2dec(s[0:2]))]
     return '.'.join(ip)
 	
-def conn_track(ct_interval,conn_limit):
-	threading.Timer(ct_interval, conn_track, args = (ct_interval,conn_limit)).start()
+def conn_track(conn_limit):
+	#threading.Timer(ct_interval, conn_track, args = (ct_interval,conn_limit)).start()
 	ips = conf(proc)
 	list_ip = []
 	for ip, num in ips.items():
@@ -133,14 +134,18 @@ def conn_track(ct_interval,conn_limit):
 	#for ip, num in ips.iteritems():
 		if num >= conn_limit:
 			list_ip.append(ip)
-	print (list_ip)
-	return list_ip
 
 if conn_limit != 0:
-	conn_track(ct_interval,conn_limit)
+	cronjob(conn_track,ct_interval,conn_limit)
 
 
 # End connnection tracking	
+##########################
+def cronjob(func,interval,*args):
+    # call the provided func
+    func(*args)
+    threading.Timer(interval, partial(repeat, func, interval), args=args).start()
+
 ##########################
 dshi = "http://feeds.dshield.org/top10-2.txt"
 block = "https://zeustracker.abuse.ch/blocklist.php?download=ipblocklist"
