@@ -132,8 +132,12 @@ def conn_track(conn_limit):
 	for ip, num in ips.items():
 	# python 2.x
 	#for ip, num in ips.iteritems():
-		if num >= conn_limit:
-			list_ip.append(ip)
+		if ct_email == 1 and list_ip != []:
+        	str_ips = '\n'.join(list_ip)
+        	smtp("Connection tracking","Blockking IPs:\n %s" %(str_ips))
+        	add_ip(list_ip,"ct_group")
+        	commit()
+	return list_ip
 
 if conn_limit != 0:
 	cronjob(conn_track,ct_interval,conn_limit)
