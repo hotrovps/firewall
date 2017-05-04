@@ -1,3 +1,4 @@
+from smtp import smtp
 from functools import partial
 import json , urllib2, time, warnings
 #import urllib.request
@@ -91,11 +92,17 @@ def exit():
 # End Vyatta Configuration
 
 ##########################
-# Connection Tracking
+def cronjob(func,interval,*args):
+    # call the provided func
+    func(*args)
+    threading.Timer(interval, partial(cronjob, func, interval), args=args).start()
+#########################
+# Connection tracking
 proc = "/proc/net/tcp"
-ports = []
-conn_limit = 0
-ct_interval = 10
+ports = ['80']
+conn_limit = 100
+ct_interval = 30
+ct_email = 1
 def conf(proc_file):
 	with open(proc_file) as f:
 		f.readline()
@@ -132,11 +139,15 @@ def conn_track(conn_limit):
 	for ip, num in ips.items():
 	# python 2.x
 	#for ip, num in ips.iteritems():
-		if ct_email == 1 and list_ip != []:
-        	str_ips = '\n'.join(list_ip)
-        	smtp("Connection tracking","Blockking IPs:\n %s" %(str_ips))
-        	add_ip(list_ip,"ct_group")
-        	commit()
+		if num >= conn_limit:
+			list_ip.append(ip)
+		if list_ip != []:
+			add_ip(list_ip,"ct_group")
+			commit()
+			if ct_email == 1:
+				str_ips = '\n'.join(list_ip)
+				smtp("Connection tracking","Blockking IPs:\n %s" %(str_ips))
+	print (list_ip)
 	return list_ip
 
 if conn_limit != 0:
@@ -145,20 +156,14 @@ if conn_limit != 0:
 
 # End connnection tracking.	
 ##########################
-def cronjob(func,interval,*args):
-    # call the provided func
-    func(*args)
-    threading.Timer(interval, partial(repeat, func, interval), args=args).start()
-
-##########################
 dshi = "http://feeds.dshield.org/top10-2.txt"
 block = "https://zeustracker.abuse.ch/blocklist.php?download=ipblocklist"
 blocklist = "https://lists.blocklist.de/lists/all.txt"
 #add_ip(get_ip_url(blocklist),"blocklist")
 #add_ip(get_ip_url(block),"block")
-add_ip(get_ip_url(dshi),"dshi")
+#add_ip(get_ip_url(dshi),"dshi")
 #add_ip(get_ip_url(spam_drop),"spam")
-add_ip(get_ip_file("all.txt"), "blocklist")
+#add_ip(get_ip_file("all.txt"), "blocklist")
 commit()
 save()
 exit()
