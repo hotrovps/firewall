@@ -139,7 +139,7 @@ if conn_limit != 0:
 	cronjob(conn_track,ct_interval,conn_limit)
 
 
-# End connnection tracking	
+# End connnection tracking.	
 ##########################
 def cronjob(func,interval,*args):
     # call the provided func
