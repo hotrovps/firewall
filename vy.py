@@ -7,11 +7,10 @@ import requests, re
 import threading
 from collections import Counter
 # Vyatta Configuration
-with open("config.yaml", 'r') as ymlfile:
-    cfg = yaml.load(ymlfile)
-vyatta_ip = cfg['vyatta']['host']
-auth=(cfg['vyatta']['user'], cfg['vyatta']['pass'])
-headers = {'Accept': 'application/json' , 'Vyatta-Specification-Version': '0.1' 
+vyatta_ip = 'localhost'
+auth=('vyatta', 'vyatta')
+headers = {'Accept': 'application/json' , 'Vyatta-Specification-Version': '0.1' }
+spam_drop = "https://www.spamhaus.org/drop/drop.txt"
 delimiter = "##############################"
 def start():
 	print (delimiter)
@@ -73,8 +72,10 @@ def add_ip(list_ip,group_ip):
 		ip = ip.replace('/', '%2F')
 		url = 'https://%s/rest/conf/%s/set/resources/group/address-group/%s/address/%s' %(vyatta_ip,id,group_ip,ip)
 		requests.put(url, auth=auth, headers=headers, verify=False)        
+	commit()
 	elapsed_time = time.time() - start_time
 	print ("Elapsed Time:%s seconds." %(elapsed_time))
+	return
 
 def commit():
 	commit_url = 'https://%s/rest/conf/%s/commit' %(vyatta_ip,id)
@@ -91,3 +92,80 @@ def exit():
 	requests.delete(exit_url, auth=auth, headers=headers, verify=False)
 	return
 # End Vyatta Configuration
+
+##########################
+def cronjob(func,interval,*args):
+    # call the provided func
+    func(*args)
+    threading.Timer(interval, partial(cronjob, func, interval), args=args).start()
+#########################
+# Connection tracking
+proc = "/proc/net/tcp"
+ports = ['80']
+conn_limit = 100
+ct_interval = 30
+ct_email = 1
+def conf(proc_file):
+	with open(proc_file) as f:
+		f.readline()
+		mylist = f.read().splitlines()
+		li = []
+		for line in mylist:
+			line = line.strip().split(' ')
+			src_ip, src_p = get_ip_port(line[1])
+			des_ip, des_p = get_ip_port(line[2])
+			if src_ip == "0.0.0.0" or src_ip == "127.0.0.1":
+				continue
+			if ports == []:
+				li.append(des_ip)
+			elif src_p not in set(ports):
+				continue
+			else:
+				li.append(des_ip)
+	return (Counter(li))
+
+def hex2dec(num):
+	num = str(int(num,16))
+	return	num 	
+def get_ip_port(li):
+	host,port = li.split(':')
+	return ip(host),hex2dec(port)
+def ip(s):
+    ip = [(hex2dec(s[6:8])),(hex2dec(s[4:6])),(hex2dec(s[2:4])),(hex2dec(s[0:2]))]
+    return '.'.join(ip)
+	
+def conn_track(conn_limit):
+	#threading.Timer(ct_interval, conn_track, args = (ct_interval,conn_limit)).start()
+	ips = conf(proc)
+	list_ip = []
+	for ip, num in ips.items():
+	# python 2.x
+	#for ip, num in ips.iteritems():
+		if num >= conn_limit:
+			list_ip.append(ip)
+		if list_ip != []:
+			add_ip(list_ip,"ct_group")
+			commit()
+			if ct_email == 1:
+				str_ips = '\n'.join(list_ip)
+				smtp("Connection tracking","Blockking IPs:\n %s" %(str_ips))
+	print (list_ip)
+	return list_ip
+
+if conn_limit != 0:
+	cronjob(conn_track,ct_interval,conn_limit)
+
+
+# End connnection tracking.	
+##########################
+dshi = "http://feeds.dshield.org/top10-2.txt"
+block = "https://zeustracker.abuse.ch/blocklist.php?download=ipblocklist"
+blocklist = "https://lists.blocklist.de/lists/all.txt"
+#add_ip(get_ip_url(blocklist),"blocklist")
+#add_ip(get_ip_url(block),"block")
+#add_ip(get_ip_url(dshi),"dshi")
+#add_ip(get_ip_url(spam_drop),"spam")
+#add_ip(get_ip_file("all.txt"), "blocklist")
+commit()
+save()
+exit()
